@@ -1,0 +1,6 @@
+{
+  "name": "90-Day Life Tracker Engine",
+  "description": "Premium 90-Day dashboard for lifestyle correction, mood tracking, core habit monitoring, and AI motivation.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

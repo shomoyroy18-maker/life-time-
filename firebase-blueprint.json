@@ -1,0 +1,71 @@
+{
+  "entities": {
+    "user_profile": {
+      "title": "User Profile",
+      "description": "User configuration, active day, and theme preference.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "email": { "type": "string" },
+        "displayName": { "type": "string" },
+        "currentDay": { "type": "number", "description": "Active day from 1 to 60" },
+        "theme": { "type": "string", "enum": ["cyber", "light", "ocean", "sunset"] },
+        "targetBdtIncome": { "type": "number" },
+        "currentBdtIncome": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "email", "displayName", "currentDay", "theme", "targetBdtIncome", "currentBdtIncome"]
+    },
+    "daily_log": {
+      "title": "Daily Log",
+      "description": "Log of day-to-day metrics, mood, focus hours, salat, and nicotine status.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "date": { "type": "string", "format": "date" },
+        "mood": { "type": "string", "enum": ["excellent", "good", "average", "low", "crisis"] },
+        "energyLevel": { "type": "integer" },
+        "salatCongregation": { "type": "boolean" },
+        "nicotineFree": { "type": "boolean" },
+        "quranHifz": { "type": "boolean" },
+        "workoutCompleted": { "type": "boolean" },
+        "focusHours": { "type": "number" },
+        "pipelineLeads": { "type": "number" },
+        "notes": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "date", "mood", "energyLevel", "salatCongregation", "nicotineFree", "quranHifz", "workoutCompleted", "focusHours", "pipelineLeads"]
+    },
+    "todo_item": {
+      "title": "To-Do Item",
+      "description": "Actionable item with priority level.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "taskText": { "type": "string" },
+        "timeSlot": { "type": "string" },
+        "priority": { "type": "string", "enum": ["critical", "high", "medium_low"] },
+        "completed": { "type": "boolean" },
+        "date": { "type": "string", "format": "date" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "taskText", "priority", "completed"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "user_profile",
+      "description": "Individual user preferences and profiles."
+    },
+    "/users/{userId}/daily_logs/{logId}": {
+      "schema": "daily_log",
+      "description": "Performance logs and metrics indexed by date."
+    },
+    "/users/{userId}/todo_items/{todoId}": {
+      "schema": "todo_item",
+      "description": "Tasks for the active user dashboard."
+    }
+  }
+}

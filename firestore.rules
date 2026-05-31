@@ -1,0 +1,125 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // 1. GLOBAL SAFETY NET
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // 2. REUSABLE HELPER FUNCTIONS
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128;
+    }
+
+    // 3. ENTITY SPECIFIC SCHEMAS
+    function isValidUserProfile(data) {
+      return data.userId == request.auth.uid
+        && data.email is string
+        && data.displayName is string
+        && data.currentDay is int
+        && data.currentDay >= 1 && data.currentDay <= 60
+        && data.theme in ['cyber', 'light', 'ocean', 'sunset']
+        && (data.targetBdtIncome is int || data.targetBdtIncome is float)
+        && (data.currentBdtIncome is int || data.currentBdtIncome is float);
+    }
+
+    function isValidDailyLog(data) {
+      return data.userId == request.auth.uid
+        && data.id is string
+        && data.date is string
+        && data.mood in ['excellent', 'good', 'average', 'low', 'crisis']
+        && data.energyLevel is int
+        && data.energyLevel >= 1 && data.energyLevel <= 10
+        && data.salatCongregation is bool
+        && data.nicotineFree is bool
+        && data.quranHifz is bool
+        && data.workoutCompleted is bool
+        && (data.focusHours is int || data.focusHours is float)
+        && data.focusHours >= 0.0 && data.focusHours <= 24.0
+        && (data.pipelineLeads is int || data.pipelineLeads is float)
+        && data.pipelineLeads >= 0.0
+        && (!data.keys().contains('notes') || data.notes is string);
+    }
+
+    function isValidTodoItem(data) {
+      return data.userId == request.auth.uid
+        && data.id is string
+        && data.taskText is string
+        && data.taskText.size() <= 1000
+        && data.timeSlot is string
+        && data.priority in ['critical', 'high', 'medium_low']
+        && data.completed is bool
+        && data.date is string;
+    }
+
+    // 4. RESOURCE PATH ROUTING & POLICY
+    match /users/{userId} {
+      allow read: if isOwner(userId);
+      
+      allow create: if isOwner(userId)
+        && incoming().keys().hasAll(['userId', 'email', 'displayName', 'currentDay', 'theme', 'targetBdtIncome', 'currentBdtIncome'])
+        && isValidUserProfile(incoming());
+        
+      allow update: if isOwner(userId)
+        && incoming().userId == existing().userId
+        && incoming().email == existing().email
+        && incoming().keys().hasAll(['userId', 'email', 'displayName', 'currentDay', 'theme', 'targetBdtIncome', 'currentBdtIncome'])
+        && isValidUserProfile(incoming());
+        
+      allow delete: if isOwner(userId);
+
+      // Daily logs sub-collection
+      match /daily_logs/{logId} {
+        allow read: if isOwner(userId);
+        
+        allow create: if isOwner(userId)
+          && isValidId(logId)
+          && incoming().keys().hasAll(['id', 'userId', 'date', 'mood', 'energyLevel', 'salatCongregation', 'nicotineFree', 'quranHifz', 'workoutCompleted', 'focusHours', 'pipelineLeads'])
+          && isValidDailyLog(incoming());
+          
+        allow update: if isOwner(userId)
+          && incoming().id == existing().id
+          && incoming().userId == existing().userId
+          && incoming().keys().hasAll(['id', 'userId', 'date', 'mood', 'energyLevel', 'salatCongregation', 'nicotineFree', 'quranHifz', 'workoutCompleted', 'focusHours', 'pipelineLeads'])
+          && isValidDailyLog(incoming());
+          
+        allow delete: if isOwner(userId);
+      }
+
+      // Todo items sub-collection
+      match /todo_items/{todoId} {
+        allow read: if isOwner(userId);
+        
+        allow create: if isOwner(userId)
+          && isValidId(todoId)
+          && incoming().keys().hasAll(['id', 'userId', 'taskText', 'timeSlot', 'priority', 'completed', 'date'])
+          && isValidTodoItem(incoming());
+          
+        allow update: if isOwner(userId)
+          && incoming().id == existing().id
+          && incoming().userId == existing().userId
+          && incoming().keys().hasAll(['id', 'userId', 'taskText', 'timeSlot', 'priority', 'completed', 'date'])
+          && isValidTodoItem(incoming());
+          
+        allow delete: if isOwner(userId);
+      }
+    }
+  }
+}
